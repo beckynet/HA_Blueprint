@@ -1,0 +1,150 @@
+# #Contrôle automatique des volets en fonction de la position du soleil et de la température extérieur
+# #Auteur : Cyril Barthel
+# #Version : 2.4
+blueprint:
+  name: sun protection
+  description: close cover when sun is shining and open when stops
+  domain: automation
+  source_url: https://gist.github.com/mougeat/bec9f93c723c8e7d1a9c64c2592fa471
+  input:
+    cover_entity:
+      name: cover
+      selector:
+        # target:
+          entity:
+            filter:
+              domain: cover
+    sun_position_start:
+      name: sun azimuth position start
+      description: Sun azimuth. when sun is below this value, shutter could be triggered
+      default: 89
+      selector:
+        number:
+          min: 0
+          max: 360
+          unit_of_measurement: °
+    sun_position_end:
+      name: sun azimuth position end
+      description: Sun azimuth. when sun is over this value, shutter could be triggered
+      default: 200
+      selector:
+        number:
+          min: 0
+          max: 360
+          unit_of_measurement: °
+    sun_elevation_start:
+      name: sun elevation to start
+      description: Sun elevation. when sun is over this value, shutter could be triggered
+      default: 32
+      selector:
+        number:
+          min: -100
+          max: 360
+          unit_of_measurement: °
+    weather:
+      name: Weather service
+      selector:
+        entity:
+          filter:
+            domain: weather
+    outdoor_temp:
+      name: Outdoor temperature
+      description: Temperature above which the shutters will close
+      default: 16
+      selector:
+        number:
+          min: 0
+          max: 30
+          unit_of_measurement: °C
+    close_time:
+      name: Closing time
+      description: Duration the shutter closes (max 60s)
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 60
+          unit_of_measurement: s
+
+
+variables:
+  cover_e: !input cover_entity
+  var_e: "{{ 'var.' + cover_e[6:] }}"
+  protection_begin: !input sun_position_start
+  protection_end: !input sun_position_end
+  elevation_begin: !input sun_elevation_start
+  outdoor_temp: !input outdoor_temp
+  weather_service: !input weather
+
+mode: parallel
+
+trigger:
+  - trigger: time_pattern
+    minutes: "/5"
+  
+condition:
+  condition: sun
+  before: sunset
+  after: sunrise
+
+action:
+  - choose:
+      ##########################################################
+      # close cover
+      ##########################################################
+      - conditions:
+          - condition: template
+            value_template: "{{- is_state('input_boolean.cover_manage_cover_with_sun', 'on') -}}"
+          - condition: or
+            conditions:
+              - condition: template
+                value_template: "{{ states(weather_service) == 'partlycloudy' }}"
+              - condition: template
+                value_template: "{{ states(weather_service) == 'sunny' }}"
+          - condition: template
+            value_template: "{{ states(var_e) != '1' }}"
+          - condition: template
+            value_template: "{{ state_attr('sun.sun', 'azimuth') > protection_begin and state_attr('sun.sun', 'azimuth') < protection_end and state_attr('sun.sun', 'elevation') > elevation_begin }}"
+          - condition: template
+            value_template: "{{ state_attr(weather_service, 'temperature') > outdoor_temp }}"
+        sequence:
+          - action: cover.close_cover
+            data_template:
+              entity_id: "{{ cover_e }}"
+          - delay:
+              seconds: !input "close_time"
+          - action: cover.stop_cover
+            data_template:
+              entity_id: "{{ cover_e }}"
+          - condition: template
+            value_template: "{{ states(cover_e) == 'closed' }}"
+          - variables:
+              entity_id: "{{ var_e }}"
+              value: 1
+
+      ##########################################################
+      # open cover
+      ##########################################################
+      - conditions:
+          - condition: template
+            value_template: "{{- is_state('input_boolean.cover_manage_cover_with_sun', 'on') -}}"
+          # - condition: and
+          #   conditions:
+          #     - condition: template
+          #       value_template: "{{ states(weather_service) != 'partlycloudy' }}"
+          #     - condition: template
+          #       value_template: "{{ states(weather_service) != 'sunny' }}"
+          - condition: template
+            value_template: "{{ states(var_e) == '1' }}"
+          - condition: template
+            value_template: "{{ (state_attr('sun.sun', 'azimuth') < protection_begin or state_attr('sun.sun', 'azimuth') > protection_end or  state_attr('sun.sun', 'elevation') < elevation_begin) }}"
+
+        sequence:
+          - action: cover.open_cover
+            data_template:
+              entity_id: "{{ cover_e }}"
+          - condition: template
+            value_template: "{{ states(cover_e) == 'open' }}"
+          - variables:
+              entity_id: "{{ var_e }}"
+              value: 1

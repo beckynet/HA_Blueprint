@@ -1,0 +1,94 @@
+blueprint:
+  name: Notify On Door or Window Change
+  description: Notify On Door or Window Change
+  domain: automation
+  author: Beckynet
+  input:
+    contact_entities:
+      name: List Of Door or Windows Contact
+      description: List of door or windows to check
+      selector:
+        entity:
+          filter:
+          - device_class:
+            - window
+            - door
+          multiple: true
+          reorder: false
+    person_entities:
+      name: Person
+      description: Only notify if selected presence entity is not "home". Or empty.
+      default: []
+      selector:
+        entity:
+          filter:
+          - domain:
+            - person
+          multiple: true
+          reorder: false
+    target_telegram:
+      name: Telegram Group
+      description: Select Telegram Chat Traget (Optional)
+      default: []
+      selector:
+        entity:
+          domain:
+          - notify
+          integration: telegram_bot
+          multiple: true
+          reorder: false
+    target_alexa:
+      name: Alexa Devices
+      description: Alexa Devices (Optional)
+      default: []
+      selector:
+        entity:
+          domain:
+          - notify
+          integration: alexa_devices
+          multiple: true
+          reorder: false
+  source_url: https://github.com/beckynet/Home_Assistant/blob/main/components/automation/blueprints/notify_on_door_or_windows_change.yaml
+variables:
+  list_contact_entities: !input contact_entities
+  list_person_entities: !input person_entities
+  list_target_telegram: !input target_telegram
+  list_target_alexa: !input target_alexa
+triggers:
+- trigger: state
+  entity_id: !input contact_entities
+  from: 'off'
+  to: 'on'
+  id: 'on'
+- trigger: state
+  entity_id: !input contact_entities
+  from: 'on'
+  to: 'off'
+  id: 'off'
+condition:
+- condition: template
+  value_template: "{% set personnes = expand(list_person_entities) %} {% if personnes
+    | length == 0 %}\n  true\n{% else %}\n  {{ personnes | selectattr('state', 'eq',
+    'home') | list | count <= 0 }}\n{% endif %}"
+actions:
+- action: notify.send_message
+  target:
+    entity_id: !input target_telegram
+  data:
+    title: '{{ area_name(trigger.entity_id) }}'
+    message: '{% set status = {''on'': ''Ouverte'', ''off'': ''Fermée''} %} {% set
+      conditions = trigger.to_state.state %} {% set classes = {''door'': ''Porte'',
+      ''window'': ''Fenêtre''} %} {% set class = trigger.to_state.attributes.device_class
+      %} La {{ classes[class] if class in classes.keys() else ''?'' }} de la pièce
+      {{ area_name(trigger.entity_id) }} a été {{ status[conditions] if conditions
+      in status.keys() else ''?'' }}'
+- action: notify.send_message
+  target:
+    entity_id: !input target_alexa
+  data:
+    message: '{% set status = {''on'': ''Ouverte'', ''off'': ''Fermée''} %} {% set
+      conditions = trigger.to_state.state %} {% set classes = {''door'': ''Porte'',
+      ''window'': ''Fenêtre''} %} {% set class = trigger.to_state.attributes.device_class
+      %} La {{ classes[class] if class in classes.keys() else ''?'' }} de la pièce
+      {{ area_name(trigger.entity_id) }} a été {{ status[conditions] if conditions
+      in status.keys() else ''?'' }}'

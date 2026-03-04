@@ -1,0 +1,34 @@
+blueprint:
+  name: Example Blueprint avec Tags
+  description: >
+    Un Blueprint pour sélectionner des Tags multiples.
+  domain: automation
+  input:
+    selected_tags:
+      name: Tags Sélectionnés
+      description: Sélectionne les Tags pour lesquels l'automation doit réagir
+      selector:
+        entity:
+          filter:
+            - domain: all
+            - device_class: 
+              - tag
+          multiple: true
+    target_lights:
+      name: Target Lights
+      description: Select multiple lights
+      selector:
+        entity:
+          filter:
+          - domain:
+            - light
+          multiple: true
+
+triggers:
+  trigger: state
+  entity_id: !input selected_tags
+
+actions:
+  action: notify.notify
+  data:
+    message: "Un événement a été déclenché par l'un des Tags sélectionnés"

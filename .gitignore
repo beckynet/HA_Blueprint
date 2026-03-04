@@ -1,0 +1,14 @@
+# Secrets
+secrets.yaml
+*.key
+*.pem
+
+# --- VS Code ---
+.vscode/
+.history/
+
+# --- Environnements virtuels ---
+venv/
+env/
+ENV/
+.venv/

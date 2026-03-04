@@ -1,0 +1,180 @@
+blueprint:
+  name: IKEA Styrbar Z2M V2
+  description: '## Control Light(s) with IKEA STYRBAR (E2001/E2002) Dimmer remote
+    (v2.0)
+
+
+    Only for use with Zigbee2MQTT (cf [MQTT](https://www.home-assistant.io/integrations/mqtt)
+    + [Z2M addon](https://github.com/zigbee2mqtt/hassio-zigbee2mqtt#installation))
+
+
+    Available controls:
+
+    - Press the **Brigthness Up** button to turn on the light(s)
+
+    - Press the **Brigthness Down** button to turn off the light(s)
+
+    - Press and hold the **Brigthness Up** button to increase the brightness up to
+    20%
+
+    - Press and hold the **Brigthness Down** button to decrease the brightness down
+    to 20%
+
+    - Press the **Left Arrow** button to decrease the kelvin to down of 2000
+
+    - Press the **Right Arrow** button to increase the kelvin to up of 6535'
+  domain: automation
+  author: Beckynet
+  homeassistant:
+    min_version: 2024.10.0
+  input:
+    z2m_base_topic:
+      name: Zigbee2MQTT Base Topic
+      description: Zigbee2MQTT Base Topic, take a look in your Z2M configuration under
+        Setting / MQTT / Base Topic. Note that these values are case sensitive. Respect
+        lower and upper case letters
+      default: zigbee2mqtt
+      selector:
+        text: {}
+    z2m_device_name:
+      name: Zigbee2MQTT Device Name
+      description: Take a look at your Z2M device to find the device name. Note that
+        these values are case sensitive. Respect lower and upper case letters
+      default:
+      selector:
+        text: {}
+    target_lights:
+      name: Light
+      description: Light(s) or Ligth group to control
+      selector:
+        entity:
+          filter:
+          - domain:
+            - light
+          multiple: true
+          reorder: false
+  source_url: https://github.com/beckynet/Home_Assistant/blob/main/components/automation/blueprints/ikea_styrbar_z2m_v2.yaml
+trigger_variables:
+  z2m_base_topic: !input z2m_base_topic
+  z2m_device_name: !input z2m_device_name
+  light_entities: !input target_lights
+triggers:
+- trigger: mqtt
+  topic: '{{ z2m_base_topic }}/{{ z2m_device_name }}/action'
+actions:
+- choose:
+  - conditions:
+    - condition: template
+      value_template: '{{ trigger.payload == ''on'' }}'
+    sequence:
+    - action: light.turn_on
+      target:
+        entity_id: !input target_lights
+  - conditions:
+    - condition: template
+      value_template: '{{ trigger.payload == ''off'' }}'
+    sequence:
+    - action: light.turn_off
+      target:
+        entity_id: !input target_lights
+  - conditions:
+    - condition: template
+      value_template: '{{ trigger.payload == ''brightness_move_up'' }}'
+    sequence:
+    - variables:
+        total_brightness: "{% set ns = namespace(total = 0) %} {% for light in light_entities
+          %}\n  {% if state_attr(light, 'brightness') is not none %}\n    {% set ns.total
+          = ns.total + state_attr(light, 'brightness') %}\n  {% endif %}\n{% endfor
+          %} {{ ns.total }}\n"
+        light_count: "{% set ns = namespace(count = 0) %} {% for light in light_entities
+          %}\n  {% if state_attr(light, 'brightness') is not none %}\n    {% set ns.count
+          = ns.count + 1 %}\n  {% endif %}\n{% endfor %} {{ ns.count }}\n"
+        average_brightness: "{% if light_count > 0 %}\n  {{ (total_brightness / light_count)
+          | int }}\n{% else %}\n  0\n{% endif %}\n"
+    - action: light.turn_on
+      metadata: {}
+      target:
+        entity_id: !input target_lights
+      data:
+        brightness: "{% set new_brightness = average_brightness + 50 %} {% if new_brightness
+          > 255 %}\n  255\n{% else %}\n  {{ new_brightness }}\n{% endif %}\n"
+  - conditions:
+    - condition: template
+      value_template: '{{ trigger.payload == ''brightness_move_down'' }}'
+    sequence:
+    - variables:
+        total_brightness: "{% set ns = namespace(total = 0) %} {% for light in light_entities
+          %}\n  {% if state_attr(light, 'brightness') is not none %}\n    {% set ns.total
+          = ns.total + state_attr(light, 'brightness') %}\n  {% endif %}\n{% endfor
+          %} {{ ns.total }}\n"
+        light_count: "{% set ns = namespace(count = 0) %} {% for light in light_entities
+          %}\n  {% if state_attr(light, 'brightness') is not none %}\n    {% set ns.count
+          = ns.count + 1 %}\n  {% endif %}\n{% endfor %} {{ ns.count }}\n"
+        average_brightness: "{% if light_count > 0 %}\n  {{ (total_brightness / light_count)
+          | int }}\n{% else %}\n  0\n{% endif %}\n"
+    - action: light.turn_on
+      metadata: {}
+      target:
+        entity_id: !input target_lights
+      data:
+        brightness: "{% set new_brightness = average_brightness - 50 %} {% if new_brightness
+          < 25 %}\n  25\n{% else %}\n  {{ new_brightness }}\n{% endif %}\n"
+  - conditions:
+    - condition: template
+      value_template: '{{ trigger.payload == ''arrow_right_click'' }}'
+    sequence:
+    - variables:
+        total_kelvin: '{% set ns = namespace(total = 0) %} {% for light in light_entities
+          %} {% if state_attr(light, ''color_temp_kelvin'') is not none %} {% set
+          ns.total = ns.total + state_attr(light, ''color_temp_kelvin'') %} {% endif
+          %} {% endfor %} {{ ns.total }}
+
+          '
+        light_count: '{% set ns = namespace(count = 0) %} {% for light in light_entities
+          %} {% if state_attr(light, ''color_temp_kelvin'') is not none %} {% set
+          ns.count = ns.count + 1 %} {% endif %} {% endfor %} {{ ns.count }}
+
+          '
+        average_kelvin: '{% if light_count > 0 %} {{ (total_kelvin / light_count)
+          | int }} {% else %} 0 {% endif %}
+
+          '
+    - action: light.turn_on
+      metadata: {}
+      target:
+        entity_id: !input target_lights
+      data:
+        kelvin: '{% set new_kelvin = average_kelvin + 500 %} {% if new_kelvin > 6535
+          %} 6535 {% else %} {{ new_kelvin }} {% endif %}
+
+          '
+  - conditions:
+    - condition: template
+      value_template: '{{ trigger.payload == ''arrow_left_click'' }}'
+    sequence:
+    - variables:
+        total_kelvin: '{% set ns = namespace(total = 0) %} {% for light in light_entities
+          %} {% if state_attr(light, ''color_temp_kelvin'') is not none %} {% set
+          ns.total = ns.total + state_attr(light, ''color_temp_kelvin'') %} {% endif
+          %} {% endfor %} {{ ns.total }}
+
+          '
+        light_count: '{% set ns = namespace(count = 0) %} {% for light in light_entities
+          %} {% if state_attr(light, ''color_temp_kelvin'') is not none %} {% set
+          ns.count = ns.count + 1 %} {% endif %} {% endfor %} {{ ns.count }}
+
+          '
+        average_kelvin: '{% if light_count > 0 %} {{ (total_kelvin / light_count)
+          | int }} {% else %} 0 {% endif %}
+
+          '
+    - action: light.turn_on
+      metadata: {}
+      target:
+        entity_id: !input target_lights
+      data:
+        kelvin: '{% set new_kelvin = average_kelvin - 500 %} {% if new_kelvin < 2000
+          %} 2000 {% else %} {{ new_kelvin }} {% endif %}
+
+          '
+mode: single

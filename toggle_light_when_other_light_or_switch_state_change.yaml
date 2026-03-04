@@ -1,0 +1,131 @@
+blueprint:
+  name: Toggle Light When Other Light or Switch state change
+  description: '## Change status of light(s) when status change on other lamps or
+    switches.
+
+
+    The action on the target can be :
+
+    - Follow : The state of the source is reproducted
+
+    - Reverse : The state of the source is reversed
+
+    - Toggle : The state of the target is toggled'
+  domain: automation
+  author: Beckynet
+  homeassistant:
+    min_version: 2024.10.0
+  input:
+    source_entity:
+      name: Source entity
+      description: Source entity Light or Switch
+      selector:
+        entity:
+          filter:
+          - domain:
+            - switch
+            - light
+          multiple: false
+    target_entity:
+      name: Target Light(s)
+      description: Target Light(s).
+      selector:
+        entity:
+          filter:
+          - domain:
+            - light
+          multiple: true
+    target_action:
+      name: Target Action
+      description: Action attended on the Target
+      selector:
+        select:
+          mode: dropdown
+          options:
+          - label: The state of the source is reproducted
+            value: Follow
+          - label: The state of the source is reversed
+            value: Reverse
+          - label: The state of the target is toggled
+            value: Toggle
+          sort: false
+          multiple: false
+          custom_value: false
+  source_url: https://github.com/beckynet/Home_Assistant/blob/main/components/automation/blueprints/toggle_light_when_other_light_or_switch_state_change.yaml
+variables:
+  action_on_target: !input target_action
+triggers:
+- trigger: state
+  entity_id: !input source_entity
+  from: 'off'
+  to: 'on'
+  id: 'on'
+- trigger: state
+  entity_id: !input source_entity
+  from: 'on'
+  to: 'off'
+  id: 'off'
+conditions: []
+actions:
+- choose:
+  - conditions:
+    - condition: trigger
+      id:
+      - 'on'
+    sequence:
+    - choose:
+      - conditions:
+          condition: template
+          value_template: '{{ action_on_target == ''Follow'' }}'
+        sequence:
+        - action: light.turn_on
+          target:
+            entity_id: !input target_entity
+          data: {}
+      - conditions:
+          condition: template
+          value_template: '{{ action_on_target == ''Reverse'' }}'
+        sequence:
+        - action: light.turn_off
+          target:
+            entity_id: !input target_entity
+          data: {}
+      - conditions:
+          condition: template
+          value_template: '{{ action_on_target == ''Toggle'' }}'
+        sequence:
+        - action: light.toggle
+          target:
+            entity_id: !input target_entity
+          data: {}
+  - conditions:
+    - condition: trigger
+      id:
+      - 'off'
+    sequence:
+    - choose:
+      - conditions:
+          condition: template
+          value_template: '{{ action_on_target == ''Follow'' }}'
+        sequence:
+        - action: light.turn_off
+          target:
+            entity_id: !input target_entity
+          data: {}
+      - conditions:
+          condition: template
+          value_template: '{{ action_on_target == ''Reverse'' }}'
+        sequence:
+        - action: light.turn_on
+          target:
+            entity_id: !input target_entity
+          data: {}
+      - conditions:
+          condition: template
+          value_template: '{{ action_on_target == ''Toggle'' }}'
+        sequence:
+        - action: light.toggle
+          target:
+            entity_id: !input target_entity
+          data: {}
+mode: single

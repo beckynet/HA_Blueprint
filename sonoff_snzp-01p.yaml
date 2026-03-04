@@ -1,0 +1,71 @@
+blueprint:
+  name: SONOFF SNZP-01P Use with Zigbee2MQTT
+  description: '## Control Light(s) with SONOFF SNZP-01P
+
+
+    Only for use with Zigbee2MQTT (cf [MQTT](https://www.home-assistant.io/integrations/mqtt)
+    + [Z2M addon](https://github.com/zigbee2mqtt/hassio-zigbee2mqtt#installation)).
+
+
+    Available controls:
+
+    - Press single on button to toogle the light(s) or group.
+
+    - Press twice on button to toogle the light(s) or group. (Optional)'
+  domain: automation
+  author: Beckynet
+  homeassistant:
+    min_version: 2024.10.0
+  input:
+    action_entity:
+      name: SonOff Action
+      description: SONOFF SNZP-01P Action Button
+      selector:
+        entity:
+          filter:
+          - integration: mqtt
+          - domain:
+            - sensor
+          multiple: false
+    target_lights1:
+      name: Target Lights For Single Clic
+      description: Select one or multiple lights
+      selector:
+        entity:
+          filter:
+          - domain:
+            - light
+          multiple: true
+    target_lights2:
+      name: (Optional) Target Lights For Double Clic
+      description: Select one or multiple lights
+      default: []
+      selector:
+        entity:
+          filter:
+          - domain:
+            - light
+          multiple: true
+  source_url: https://github.com/beckynet/Home_Assistant/blob/main/components/automation/blueprints/sonoff_snzp-01p.yaml
+triggers:
+- trigger: state
+  entity_id: !input action_entity
+conditions: []
+actions:
+- variables:
+    command: '{{ trigger.to_state.state }}'
+- choose:
+  - conditions: '{{ command == ''single'' }}'
+    sequence:
+    - action: light.toggle
+      metadata: {}
+      data: {}
+      target:
+        entity_id: !input target_lights1
+  - conditions: '{{ command == ''double'' }}'
+    sequence:
+    - action: light.toggle
+      metadata: {}
+      data: {}
+      target:
+        entity_id: !input target_lights2

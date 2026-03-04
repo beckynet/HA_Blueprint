@@ -1,0 +1,76 @@
+blueprint:
+  name: Tuya TS0041A Z2M V2
+  description: '## Control Action with Tuya [TS0041A](https://www.zigbee2mqtt.io/devices/TS0041A.html)
+    (v2.0)
+
+
+    Only for use with Zigbee2MQTT (cf [MQTT](https://www.home-assistant.io/integrations/mqtt)
+    + [Z2M addon](https://github.com/zigbee2mqtt/hassio-zigbee2mqtt#installation)).
+
+
+    Available controls per button:
+
+    - Press Single
+
+    - Press Twice
+
+    - Press and hold
+
+    '
+  domain: automation
+  author: Beckynet
+  homeassistant:
+    min_version: 2024.10.0
+  input:
+    z2m_base_topic:
+      name: Zigbee2MQTT Base Topic
+      description: 'Zigbee2MQTT Base Topic, take a look in your Z2M configuration
+        under Setting / MQTT / Base Topic. Note: - These values are case sensitive.
+        - Respect lower and upper case letters'
+      default: zigbee2mqtt
+      selector:
+        text: {}
+    z2m_device_name:
+      name: Zigbee2MQTT Device Name
+      description: 'Take a look at your Z2M device to find the device name. Note:
+        - These values are case sensitive. - Respect lower and upper case letters'
+      default:
+      selector:
+        text: {}
+    action_1_single:
+      name: Action for 1_single
+      default: []
+      selector:
+        action: {}
+    action_1_double:
+      name: Action for 1_double
+      default: []
+      selector:
+        action: {}
+    action_1_hold:
+      name: Action for 1_hold
+      default: []
+      selector:
+        action: {}
+trigger_variables:
+  z2m_base_topic: !input z2m_base_topic
+  z2m_device_name: !input z2m_device_name
+triggers:
+- trigger: mqtt
+  topic: '{{ z2m_base_topic }}/{{ z2m_device_name }}/action'
+conditions: []
+actions:
+- choose:
+  - conditions:
+    - condition: template
+      value_template: '{{ trigger.payload == ''single'' }}'
+    sequence: !input action_1_single
+  - conditions:
+    - condition: template
+      value_template: '{{ trigger.payload == ''double'' }}'
+    sequence: !input action_1_double
+  - conditions:
+    - condition: template
+      value_template: '{{ trigger.payload == ''hold'' }}'
+    sequence: !input action_1_hold
+mode: single

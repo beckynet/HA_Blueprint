@@ -1,0 +1,193 @@
+blueprint:
+    name: Notify On Indoor Outdoor Temperature Change
+    description: Notify When Outdoor or Indoor Temperature Change
+    domain: automation
+    author: Beckynet
+    input:
+        outdoor_temp_source:
+          name: Outdoor Temperature Sensor
+          description: Outdoor Temperature Sensor
+          selector:
+            entity:
+              filter:
+                - domain: sensor
+                - device_class: temperature
+        indoor_temp_source:
+          name: Indoor Temperature Sensor
+          description: Indoor Temperature Sensor, be sure the sensor is affected in a room
+          selector:
+            entity:
+              filter:
+                - domain: sensor
+                - device_class: temperature
+        contact_entities:
+          name: List Of Door or Windows Contact
+          description: List of door or windows to check
+          selector:
+            entity:
+              filter:
+                - domain: binary_sensor
+                - device_class: 
+                    - window
+                    - door
+              multiple: true
+        start_hour:
+          name: Start Hour For Notification
+          description: Time when automation start to notify
+          selector:
+            time:
+          default: "08:00:00"
+        stop_hour:
+          name: Stop Hour For Notification
+          description: Time when automation stop to notify
+          selector:
+            time:
+          default: "22:00:00"
+        min_outdoor_temp:
+          name: Min Outdoor Temperature
+          description: Minimum Temperature To Activate Automation
+          selector:
+            number:
+              mode: slider
+              min: 10
+              max: 45
+              unit_of_measurement: °C
+          default: 16
+        hysteresis_temp:
+          name: Hysteresis
+          description: Minimum Delta Between Outdoor and Indoor To Be Notified
+          selector:
+            number:
+              mode: slider
+              min: 0
+              max: 3
+              step: 0.5
+              unit_of_measurement: °C
+          default: 1.5
+        person_entities:
+          name: Person
+          description: This person must be at home to be notified
+          selector:
+            entity:
+              filter:
+                - domain: person
+              multiple: true
+        alexa_target:
+          name: (Optional) Alexa Media Device
+          description: Alexa Media Device
+          default:
+          selector:
+            entity:
+              filter:
+                - domain: media_player
+              multiple: true
+
+    source_url: https://github.com/beckynet/Home_Assistant/blob/main/components/automation/blueprints/notify_on_indoor_outdoor_temperature_change.yaml
+
+variables:
+  automation_name: '{{ this.attributes.last_triggered }}'
+  list_contact_entities: !input contact_entities
+  list_person_entities: !input person_entities
+  hysteresis: !input hysteresis_temp
+  outdoor_sensor: !input outdoor_temp_source
+  indoor_sensor: !input indoor_temp_source
+
+trigger:
+  - trigger: state
+    entity_id:
+      - !input outdoor_temp_source
+      - !input indoor_temp_source
+
+condition:
+  - condition: and
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ (this.attributes.last_triggered + timedelta(minutes=10)) < now() if this.attributes.last_triggered is not none else true }}
+
+      - condition: time
+        before: !input stop_hour
+        after: !input start_hour
+      - condition: numeric_state
+        entity_id: !input outdoor_temp_source
+        above: !input min_outdoor_temp
+
+#      - condition: not
+#        conditions:
+#      - condition: state
+#        entity_id: !input target_person
+#        state: home
+      - condition: template
+        value_template: "{{ expand(list_person_entities) | selectattr('state', 'eq', 'home') | list | count > 0 }}"
+
+
+action:
+  - action: timer.start
+    data:
+      entity_id: timer.notifysalon_debounce
+  - choose:
+      - conditions:
+          - condition: and
+            conditions:
+#              - condition: state
+#                entity_id: !input list_of_contact_entities
+#                state: "off"
+              - condition: template
+                value_template: "{{ expand(list_contact_entities) | selectattr('state', 'eq', 'off') | list | count > 0 }}"
+              - condition: template
+                alias: "Indoor - Outdoor Greater Of Hysteresis"
+                value_template: >-
+                  {{ states[indoor_sensor].state|float - states[outdoor_sensor].state|float > hysteresis }}
+        sequence: 
+          - action: script.notify_send_message_to_telegram_group
+            metadata: {}
+            data:
+              title: "{{ area_name(indoor_sensor) }}"
+              message: >-
+                {% set outdoor = states[outdoor_sensor].state|float %}
+                {% set indoor = states[indoor_sensor].state| float
+                %} Il faut ouvrir les fenêtres de la pièce {{ area_name(indoor_sensor) }}, il y a
+                {{"{:.1f}".format((indoor - outdoor) | abs) }}°C d'écart avec l'extérieure
+          - action: notify.alexa_media
+            data:
+              target: !input alexa_target
+              data:
+                type: announce
+              message: >-
+                {% set outdoor = states[outdoor_sensor].state|float %}
+                {% set indoor = states[indoor_sensor].state| float
+                %} Il faut ouvrir les fenêtres de la pièce {{ area_name(indoor_sensor) }}, il y a
+                {{"{:.1f}".format((indoor - outdoor) | abs) }}°C d'écart avec l'extérieure
+      - conditions:
+          - condition: and
+            conditions:
+#              - condition: state
+#                entity_id: !input list_of_contact_entities
+#                state: "on"
+              - condition: template
+                value_template: "{{ expand(list_contact_entities) | selectattr('state', 'eq', 'on') | list | count > 0 }}"
+              - condition: template
+                alias: "Outdoor - Indoor Greater Of Hysteresis"
+                value_template: >-
+                  {{ states[outdoor_sensor].state|float - states[indoor_sensor].state|float > hysteresis }}
+        sequence: 
+          - action: script.notify_send_message_to_telegram_group
+            metadata: {}
+            data:
+              title: "{{ area_name(indoor_sensor) }}"
+              message: >-
+                {% set outdoor = states[outdoor_sensor].state|float %}
+                {% set indoor = states[indoor_sensor].state| float
+                %} Il faut fermer les fenêtres de la pièce {{ area_name(indoor_sensor) }}, il y a
+                {{"{:.1f}".format((outdoor - indoor) | abs) }}°C d'écart avec l'extérieure
+          - action: notify.alexa_media
+            data:
+              target: !input alexa_target
+              data:
+                type: announce
+              message: >-
+                {% set outdoor = states[outdoor_sensor].state|float %}
+                {% set indoor = states[indoor_sensor].state| float
+                %} Il faut fermer les fenêtres de la pièce {{ area_name(indoor_sensor) }}, il y a
+                {{"{:.1f}".format((outdoor - indoor) | abs) }}°C d'écart avec l'extérieure
+mode: single
