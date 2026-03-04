@@ -45,7 +45,7 @@ action:
     data:
       color_name: red
       brightness: 255
-  - service: !input.notify_target
+  - service: !input notify_target
     data:
       message: >
         ⚠️ Batterie faible détectée sur {{ state_attr(!input.battery_sensor, 'friendly_name') }} ({{ states(!input.battery_sensor) }}%)
