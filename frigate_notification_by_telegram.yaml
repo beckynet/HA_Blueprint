@@ -8,10 +8,24 @@ blueprint:
       name: Frigate Camera
       description: The name of the camera as defined in your frigate configuration
         (/frigate.yaml).
+    # target_chat:
+    #   name: Target
+    #   description: The chat_id to be used by the Telegram bot. !secret chat_id is
+    #     not allowed on Blueprint, you will need the chat_id code.
+
     target_chat:
       name: Target
-      description: The chat_id to be used by the Telegram bot. !secret chat_id is
-        not allowed on Blueprint, you will need the chat_id code.
+      description: Select Telegram Chat Traget (Optional)
+      default: []
+      selector:
+        entity:
+          domain:
+          - notify
+          integration: telegram_bot
+          multiple: true
+          reorder: false
+
+
     notification:
       name: Notification
       description: Select "true" to disable notification, lave "false" to receive
@@ -62,7 +76,7 @@ blueprint:
   source_url: https://github.com/beckynet/Home_Assistant/blob/main/components/automation/blueprints/frigate_notification_by_telegram.yaml
 mode: single
 max_exceeded: silent
-trigger:
+triggers:
   trigger: mqtt
   topic: frigate/events
   payload: !input camera
@@ -90,15 +104,23 @@ condition:
 - '{{ not zones|length or zones|select(''in'', entered_zones)|list|length > 0 }}'
 - '{{ not labels|length or object in labels }}'
 - '{{ not presence_entity or not is_state(presence_entity, ''home'') }}'
-action:
-- action: telegram_bot.send_photo
-  data:
-    target: '{{ target_chat }}'
-    disable_notification: '{{ notification }}'
-    caption: 'Objet Detecté: {{ label }} sur Caméra: {{ camera_name }} SnapShot
+actions:
+# - action: telegram_bot.send_photo
+#   data:
+#     target: '{{ target_chat }}'
+#     disable_notification: '{{ notification }}'
+#     caption: 'Objet Detecté: {{ label }} sur Caméra: {{ camera_name }} SnapShot'
+#     url: '{{base_url}}/api/frigate/notifications/{{id}}/snapshot.jpg'
 
-      '
+- action: telegram_bot.send_photo
+  metadata: {}
+  data:
+    # verify_ssl: true
+    entity_id: '{{ target_chat }}'
+    caption: 'Objet Detecté: {{ label }} sur Caméra: {{ camera_name }} SnapShot'
     url: '{{base_url}}/api/frigate/notifications/{{id}}/snapshot.jpg'
+    disable_notification: '{{ notification }}'
+
 - repeat:
     sequence:
     - wait_for_trigger:
@@ -111,10 +133,20 @@ action:
       continue_on_timeout: false
     - condition: template
       value_template: '{{ wait.trigger.payload_json[''type''] == ''end'' }}'
+    # - action: telegram_bot.send_video
+    #   data:
+    #     target: '{{ target_chat }}'
+    #     disable_notification: '{{ notification }}'
+    #     caption: 'Objet Detecté: {{ label }} sur Caméra: {{ camera_name }} Vidéo'
+    #     url: '{{base_url}}/api/frigate/notifications/{{id}}/{{camera}}/clip.mp4'
+
     - action: telegram_bot.send_video
+      metadata: {}
       data:
-        target: '{{ target_chat }}'
-        disable_notification: '{{ notification }}'
-        caption: 'Objet Detecté: {{ label }} sur Caméra: {{ camera_name }} Vidéo'
+        # verify_ssl: true
+        entity_id: '{{ target_chat }}'
         url: '{{base_url}}/api/frigate/notifications/{{id}}/{{camera}}/clip.mp4'
+        caption: 'Objet Detecté: {{ label }} sur Caméra: {{ camera_name }} Vidéo'
+        disable_notification: '{{ notification }}'
+
     until: '{{ wait.trigger.payload_json[''type''] == ''end'' }}'

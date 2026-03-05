@@ -1,18 +1,19 @@
 blueprint:
-  name: Alerte batterie Tado + LED
-  description: Alerte batterie faible avec notification et LED Zigbee
+  name: Alerte batterie Tado
+  description: Alerte batterie faible avec notification
   domain: automation
   input:
     battery_sensor:
       name: Capteur de batterie
       selector:
         entity:
-          domain: sensor
-    led_entity:
-      name: LED Zigbee ou autre entité visuelle
-      selector:
-        entity:
-          domain: light
+          domain:
+          - binary_sensor
+          device_class:
+          - battery
+          multiple: true
+          reorder: false
+          
     notify_target:
       name: Cible de notification
       selector:
@@ -28,24 +29,19 @@ blueprint:
           max: 50
           unit_of_measurement: '%'
 
-trigger:
-  - platform: numeric_state
+triggers:
+  - trigger: numeric_state
     entity_id: !input battery_sensor
     below: !input seuil
+    for: "01:00:00"
 
-condition:
+conditions:
   - condition: template
     value_template: >
       {{ states(!input.battery_sensor) | int > 0 }}
 
-action:
-  - service: light.turn_on
-    target:
-      entity_id: !input led_entity
-    data:
-      color_name: red
-      brightness: 255
-  - service: !input notify_target
+actions:
+  - action: !input notify_target
     data:
       message: >
         ⚠️ Batterie faible détectée sur {{ state_attr(!input.battery_sensor, 'friendly_name') }} ({{ states(!input.battery_sensor) }}%)
