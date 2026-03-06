@@ -65,7 +65,7 @@ blueprint:
       default: []
       selector:
         action: {}
-  source_url: https://github.com/beckynet/Home_Assistant/blob/main/components/automation/blueprints/notification_on_low_battery.yaml
+  source_url: https://github.com/beckynet/HA_Blueprint/blob/main/notification_on_low_battery.yaml
 variables:
   threshold: !input threshold
   day: !input day

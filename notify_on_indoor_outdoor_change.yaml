@@ -82,7 +82,7 @@ blueprint:
                 - domain: media_player
               multiple: true
 
-    source_url: https://github.com/beckynet/Home_Assistant/blob/main/components/automation/blueprints/notify_on_indoor_outdoor_temperature_change.yaml
+    source_url: https://github.com/beckynet/HA_Blueprint/blob/main/notify_on_indoor_outdoor_temperature_change.yaml
 
 variables:
   automation_name: '{{ this.attributes.last_triggered }}'

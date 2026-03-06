@@ -51,7 +51,7 @@ blueprint:
           sort: false
           multiple: false
           custom_value: false
-  source_url: https://github.com/beckynet/Home_Assistant/blob/main/components/automation/blueprints/toggle_light_when_other_light_or_switch_state_change.yaml
+  source_url: https://github.com/beckynet/HA_Blueprint/blob/main/toggle_light_when_other_light_or_switch_state_change.yaml
 variables:
   action_on_target: !input target_action
 triggers:

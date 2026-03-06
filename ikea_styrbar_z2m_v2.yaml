@@ -53,7 +53,7 @@ blueprint:
             - light
           multiple: true
           reorder: false
-  source_url: https://github.com/beckynet/Home_Assistant/blob/main/components/automation/blueprints/ikea_styrbar_z2m_v2.yaml
+  source_url: https://github.com/beckynet/HA_Blueprint/blob/main/ikea_styrbar_z2m_v2.yaml
 trigger_variables:
   z2m_base_topic: !input z2m_base_topic
   z2m_device_name: !input z2m_device_name

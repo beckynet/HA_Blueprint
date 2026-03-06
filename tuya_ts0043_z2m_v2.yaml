@@ -82,7 +82,7 @@ blueprint:
       default: []
       selector:
         action: {}
-  source_url: https://github.com/beckynet/Home_Assistant/blob/main/components/automation/blueprints/tuya_ts0043_z2m_v2.yaml
+  source_url: https://github.com/beckynet/HA_Blueprint/blob/main/tuya_ts0043_z2m_v2.yaml
 trigger_variables:
   z2m_base_topic: !input z2m_base_topic
   z2m_device_name: !input z2m_device_name

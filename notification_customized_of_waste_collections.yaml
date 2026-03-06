@@ -72,7 +72,7 @@ blueprint:
           - media_player
           multiple: true
           reorder: false
-  source_url: https://github.com/beckynet/Home_Assistant/blob/main/components/automation/blueprints/notification_customized_of_waste_collections.yaml
+  source_url: https://github.com/beckynet/HA_Blueprint/blob/main/notification_customized_of_waste_collections.yaml
 variables:
   list_collect: !input collect_list
   list_target_telegram: !input target_telegram

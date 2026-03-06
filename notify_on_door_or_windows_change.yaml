@@ -48,7 +48,7 @@ blueprint:
           integration: alexa_devices
           multiple: true
           reorder: false
-  source_url: https://github.com/beckynet/Home_Assistant/blob/main/components/automation/blueprints/notify_on_door_or_windows_change.yaml
+  source_url: https://github.com/beckynet/HA_Blueprint/blob/main/notify_on_door_or_windows_change.yaml
 variables:
   list_contact_entities: !input contact_entities
   list_person_entities: !input person_entities
