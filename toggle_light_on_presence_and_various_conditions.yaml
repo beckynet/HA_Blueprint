@@ -5,6 +5,7 @@ blueprint:
   author: Beckynet
   homeassistant:
     min_version: 2024.10.0
+
   input:
     presence_entity:
       name: Presence Sensor
@@ -20,6 +21,7 @@ blueprint:
             - motion
           multiple: false
           reorder: false
+
     wait_time:
       name: Wait Time
       description: Time to leave the light on after no presence is reported
@@ -31,6 +33,7 @@ blueprint:
           step: 15.0
           unit_of_measurement: seconds
       default: 60
+
     light_target:
       name: Light
       description: Light(s) or Ligth group to control
@@ -41,6 +44,7 @@ blueprint:
             - light
           multiple: true
           reorder: false
+
     daylight_as_condition:
       name: Daylight as condition (Optional)
       icon: mdi:theme-light-dark
@@ -59,9 +63,6 @@ blueprint:
                 value: daylight_enabled
               - label: Disable Daylight as condition
                 value: daylight_disabled
-              custom_value: false
-              sort: false
-              multiple: false
         day_or_night_use:
           name: Day or Night use
           description: "Use The Daylight option will add a sunset or sunrise condition.\n\n
@@ -75,9 +76,7 @@ blueprint:
                 value: day_use
               - label: Activate Night use
                 value: night_use
-              custom_value: false
-              sort: false
-              multiple: false
+
     time_as_condition:
       name: Time as condition (Optional)
       icon: mdi:clock-outline
@@ -98,9 +97,6 @@ blueprint:
                 value: time_enabled
               - label: Disable the time options
                 value: time_disabled
-              custom_value: false
-              sort: false
-              multiple: false
         after_time:
           name: Start Time
           description: Set the start time.
@@ -109,10 +105,11 @@ blueprint:
             time: {}
         before_time:
           name: End Time
-          description: Set the end time.
+          description: Set the end time.										
           default: 00:00:00
           selector:
             time: {}
+
     luminosity_as_condition:
       name: Luminosity as condition (Optional)
       icon: mdi:lightbulb-multiple-outline
@@ -132,9 +129,6 @@ blueprint:
                 value: luminosity_dim_enabled
               - label: Disable Luminosity as condition
                 value: luminosity_disabled
-              custom_value: false
-              sort: false
-              multiple: false
         illuminance_entity:
           name: Illuminance Sensor
           description: The luminance sensor that measures light
@@ -146,8 +140,6 @@ blueprint:
                 - sensor
                 device_class:
                 - illuminance
-              multiple: false
-              reorder: false
         illuminance_value:
           name: Illuminance Value (Lux)
           description: The light will turn on only if the lux is below this value
@@ -159,6 +151,7 @@ blueprint:
               max: 2000.0
               step: 20.0
               unit_of_measurement: lux
+
     bypass_settings:
       name: Bypass (Optional)
       icon: mdi:cog-pause-outline
@@ -175,9 +168,6 @@ blueprint:
                 value: bypass_enabled
               - label: 2 - Disable the Bypass
                 value: bypass_disabled
-              custom_value: false
-              sort: false
-              multiple: false
         bypass_after_time:
           name: Start Time
           description: Set the start time.
@@ -190,7 +180,9 @@ blueprint:
           default: 00:00:00
           selector:
             time: {}
-  source_url: https://github.com/beckynet/HA_Blueprint/blob/main/toggle_light_on_presence_and_various_conditions.yaml
+
+  source_url: https://github.com/beckynet/HA_Blueprint/blob/main/toggle_light_on_presence.yaml
+
 variables:
   automation_name: '{{ this.attributes.last_triggered }}'
   include_luminosity: !input include_luminosity
@@ -204,57 +196,102 @@ variables:
   include_bypass: !input include_bypass
   bypass_after_time: !input bypass_after_time
   bypass_before_time: !input bypass_before_time
+
 triggers:
-- trigger: state
-  entity_id: !input presence_entity
-  from: 'off'
-  to: 'on'
-  id: 'On'
-- trigger: state
-  entity_id: !input presence_entity
-  from: 'on'
-  to: 'off'
-  for:
-    seconds: !input wait_time
-  id: 'Off'
+  - trigger: state
+    entity_id: !input presence_entity
+    from: 'off'
+    to: 'on'
+    id: 'On'
+
+  - trigger: state
+    entity_id: !input presence_entity
+    from: 'on'
+    to: 'off'
+    for:
+      seconds: !input wait_time
+    id: 'Off'
+
 conditions: []
+
 actions:
-- choose:
-  - conditions:
-    - condition: trigger
-      id: 'On'
-    sequence:
-    - choose:
+  - choose:
+
+      # -------------------------
+      #   PRESENCE → ON
+      # -------------------------
       - conditions:
-        - condition: template
-          value_template: "{% set now = now().strftime('%H:%M:%S') %} {% set bypass_start
-            = bypass_after_time %} {% set bypass_end = bypass_before_time %}\n{{\n
-            \ (\n    include_luminosity == 'luminosity_disabled'\n    or\n    (include_luminosity
-            == 'luminosity_lux_enabled' and states(illuminance_entity)|float(0) <
-            illuminance_value)\n    or\n    (include_luminosity == 'luminosity_dim_enabled'
-            and states(illuminance_entity) == 'dim')\n  )\n  and\n  (\n    include_time
-            == 'time_disabled'\n    or\n    (include_time == 'time_enabled' and now
-            > after_time and now < before_time)\n  )\n  and\n  (\n    include_daylight
-            == 'daylight_disabled'\n    or\n    (\n      include_daylight == 'daylight_enabled'\n
-            \     and (\n        (day_or_night_use == 'day_use' and is_state('sun.sun','above_horizon'))\n
-            \       or\n        (day_or_night_use == 'night_use' and is_state('sun.sun','below_horizon'))\n
-            \     )\n    )\n  )\n  and\n  (\n    include_bypass == 'bypass_disabled'\n
-            \   or\n    (\n      include_bypass == 'bypass_enabled'\n      and not
-            (\n        (now >= bypass_start) or (now <= bypass_end)\n      )\n    )\n
-            \ )\n}}\n"
+          - condition: trigger
+            id: 'On'
         sequence:
-        - action: light.turn_on
-          target:
-            entity_id: !input light_target
-      default:
-      - action: light.turn_off
-        target:
-          entity_id: !input light_target
-  - conditions:
-    - condition: trigger
-      id: 'Off'
-    sequence:
-    - action: light.turn_off
-      target:
-        entity_id: !input light_target
+          - choose:
+
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {% set now = now().strftime('%H:%M:%S') %}
+                      {% set bypass_start = bypass_after_time %}
+                      {% set bypass_end = bypass_before_time %}
+
+                      {{
+                        (
+                          include_luminosity == 'luminosity_disabled'
+                          or
+                          (include_luminosity == 'luminosity_lux_enabled' and states(illuminance_entity)|float(0) < illuminance_value)
+                          or
+                          (include_luminosity == 'luminosity_dim_enabled' and states(illuminance_entity) == 'dim')
+                        )
+                        and
+                        (
+                          include_time == 'time_disabled'
+                          or
+                          (include_time == 'time_enabled' and now > after_time and now < before_time)
+                        )
+                        and
+                        (
+                          include_daylight == 'daylight_disabled'
+                          or
+                          (
+                            include_daylight == 'daylight_enabled'
+                            and (
+                              (day_or_night_use == 'day_use' and is_state('sun.sun','above_horizon'))
+                              or
+                              (day_or_night_use == 'night_use' and is_state('sun.sun','below_horizon'))
+                            )
+                          )
+                        )
+                        and
+                        (
+                          include_bypass == 'bypass_disabled'
+                          or
+                          (
+                            include_bypass == 'bypass_enabled'
+                            and not (
+                              (now >= bypass_start) or (now <= bypass_end)
+                            )
+                          )
+                        )
+                      }}
+
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input light_target
+
+            default:
+              - action: light.turn_off
+                target:
+                  entity_id: !input light_target
+
+      # -------------------------
+      #   NO PRESENCE → OFF
+      # -------------------------
+      - conditions:
+          - condition: trigger
+            id: 'Off'
+        sequence:
+          - action: light.turn_off
+            target:
+              entity_id: !input light_target
+
 mode: single
