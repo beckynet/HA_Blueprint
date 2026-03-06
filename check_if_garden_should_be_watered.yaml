@@ -97,7 +97,7 @@ blueprint:
           - domain:
             - script
           reorder: false
-  source_url: https://github.com/beckynet/Home_Assistant/blob/main/components/automation/blueprints/check_if_garden_should_be_watered.yaml
+  source_url: https://github.com/beckynet/HA_Blueprint/blob/main/check_if_garden_should_be_watered.yaml
 trigger_variables:
   offset_sunrise: !input offset_sunrise
   minimal_days_between_watering: !input minimal_days_between_watering
