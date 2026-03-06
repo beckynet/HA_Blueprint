@@ -1,0 +1,184 @@
+blueprint:
+  name: Tuya TS0044 Z2M V2
+  description: '## Control Action with Tuya [TS0044](https://www.zigbee2mqtt.io/devices/TS0044.html) (v2.0)
+
+
+    Only for use with Zigbee2MQTT (cf [MQTT](https://www.home-assistant.io/integrations/mqtt)
+    + [Z2M addon](https://github.com/zigbee2mqtt/hassio-zigbee2mqtt#installation)).
+
+
+    Available controls per button:
+
+    - Press Single
+
+    - Press Twice
+
+    - Press and hold
+    
+    '
+  domain: automation
+  author: Beckynet
+  homeassistant:
+    min_version: 2024.10.0
+  input:
+    z2m_base_topic:
+      name: Zigbee2MQTT Base Topic
+      description: 'Zigbee2MQTT Base Topic, take a look in your Z2M configuration under Setting / MQTT / Base Topic
+        
+        Note:
+        
+          - These values are case sensitive.
+          
+          - Respect lower and upper case letters
+          
+        Sample : zigbee2mqtt/device name/action.'
+      default: zigbee2mqtt
+      selector:
+        text:
+
+    action_1_single:
+      name: Action for 1_single
+      default: []
+      selector:
+        action:
+
+    action_1_double:
+      name: Action for 1_double
+      default: []
+      selector:
+        action:
+
+    action_1_hold:
+      name: Action for 1_hold
+      default: []
+      selector:
+        action:
+
+    action_2_single:
+      name: Action for 2_single
+      default: []
+      selector:
+        action:
+
+    action_2_double:
+      name: Action for 2_double
+      default: []
+      selector:
+        action:
+
+    action_2_hold:
+      name: Action for 2_hold
+      default: []
+      selector:
+        action:
+
+    action_3_single:
+      name: Action for 3_single
+      default: []
+      selector:
+        action:
+
+    action_3_double:
+      name: Action for 3_double
+      default: []
+      selector:
+        action:
+
+    action_3_hold:
+      name: Action for 3_hold
+      default: []
+      selector:
+        action:
+
+    action_4_single:
+      name: Action for 4_single
+      default: []
+      selector:
+        action:
+
+    action_4_double:
+      name: Action for 4_double
+      default: []
+      selector:
+        action:
+
+    action_4_hold:
+      name: Action for 4_hold
+      default: []
+      selector:
+        action:
+
+  source_url: https://github.com/beckynet/HA_Blueprint/blob/main/tuya_ts0044_z2m_v2.yaml
+
+trigger_variables:
+  z2m_base_topic: !input z2m_base_topic
+
+triggers:
+  - trigger: mqtt
+    topic: !input z2m_base_topic
+
+conditions: []
+
+actions:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.payload == '1_single' }}"
+        sequence: !input action_1_single
+
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.payload == '1_double' }}"
+        sequence: !input action_1_double
+
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.payload == '1_hold' }}"
+        sequence: !input action_1_hold
+
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.payload == '2_single' }}"
+        sequence: !input action_2_single
+
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.payload == '2_double' }}"
+        sequence: !input action_2_double
+
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.payload == '2_hold' }}"
+        sequence: !input action_2_hold
+
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.payload == '3_single' }}"
+        sequence: !input action_3_single
+
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.payload == '3_double' }}"
+        sequence: !input action_3_double
+
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.payload == '3_hold' }}"
+        sequence: !input action_3_hold
+
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.payload == '4_single' }}"
+        sequence: !input action_4_single
+
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.payload == '4_double' }}"
+        sequence: !input action_4_double
+
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.payload == '4_hold' }}"
+        sequence: !input action_4_hold
+
+mode: single
