@@ -1,0 +1,175 @@
+blueprint:
+  name: Sunset Actions
+  description: '##This automation blueprint is designed to control lights and switches based on the sun’s position,
+                presence detection, and optional time-based conditions.
+                It offers a flexible and intelligent way to manage your home’s ambiance and energy usage.
+                
+                🔧 What It Does ?
+                
+                This automation performs three core actions depending on the time of day and user presence:
+
+                - At Sunset (with optional offset) If someone is home (presence helper is on), it turns on the selected lights and switches.
+
+                - At Sunrise It turns off the same lights and switches, restoring a daytime setting.
+
+                - At a Specific Time (default: 23:00) If the optional time condition is enabled,
+                it checks whether the current time matches the interrupt time and then turns off the devices — useful for enforcing nighttime energy-saving or sleep routines.'
+  
+  domain: automation
+  author: Beckynet
+  homeassistant:
+    min_version: 2024.10.0
+  input:
+    offset_sunset:
+      name: Offset Relative To Sunset
+      description: Offset Relative To Sunset
+      default: 0
+      selector:
+        duration:
+          enable_millisecond: false
+          enable_day: false
+
+    time_as_condition:
+      name: Interrupt Before Sunrise (Optional)
+      icon: mdi:clock-outline
+      collapsed: true
+      input:
+        include_time:
+          name: Use The Time as Conditon (Optional)
+          description: "This option is used to add a condition that only allows the
+                        automation to run between the start time and end time settings on the
+                        selected weekdays.\n\n
+                        These time settings are global conditions that can work alongside other options.\n\n
+                        📌 The use of multiple contradictory conditions can lead to incorrect operation."
+          default: time_disabled
+          selector:
+            select:
+              options:
+              - label: Enable the time options
+                value: time_enabled
+              - label: Disable the time options
+                value: time_disabled
+              multiple: false
+              custom_value: false
+        interrupt_time:
+          name: Interrupt Time
+          description: Set the interrupt time.
+          default: 00:00:00
+          selector:
+            time: {}
+
+
+    presence_helpers:
+      name: Presence Helpers
+      description: Presence Helpers
+      default: []
+      selector:
+        entity:
+          multiple: false
+          filter:
+            - domain:
+              - input_boolean
+
+    light_target:
+      name: Light
+      description: Light(s) or Ligth group to control
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain:
+              - light
+          
+    switch_target:
+      name: Switch
+      description: Switch or Switch group to control
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain:
+              - switch
+
+  source_url: https://github.com/beckynet/HA_Blueprint/blob/main/sunset_actions.yaml
+
+variables:
+  offset_sunset: !input offset_sunset
+  presence_helpers: !input presence_helpers
+  light_target: !input light_target
+  switch_target: !input switch_target
+  include_time: !input include_time
+  interrupt_time: !input interrupt_time
+
+triggers:
+  - trigger: sun
+    event: sunset
+    offset: !input offset_sunset
+    id: "On"
+  - trigger: sun
+    event: sunrise
+    offset: 0
+    id: "Off"
+  - trigger: time
+    at: "23:00:00"
+    id: "Interrupt"
+
+conditions:
+  - condition: template
+    value_template: >
+      {{ not presence_helpers or is_state(presence_helpers, 'on') }}
+
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - "On"
+        sequence:
+          - action: light.turn_on
+            metadata: {}
+            data: {}
+            target:
+              entity_id: !input light_target
+          - action: switch.turn_on
+            metadata: {}
+            data: {}
+            target:
+              entity_id: !input switch_target
+
+      - conditions:
+          - condition: trigger
+            id:
+              - "Off"
+        sequence:
+          - action: light.turn_off
+            metadata: {}
+            data: {}
+            target:
+              entity_id: !input light_target
+          - action: switch.turn_off
+            metadata: {}
+            data: {}
+            target:
+              entity_id: !input switch_target
+
+      - conditions:
+          - condition: trigger
+            id:
+              - "Interrupt"
+        sequence:
+          - if:
+              - condition: template
+                value_template: "{{ include_time == 'time_enabled' }}"
+            then:
+              - action: light.turn_off
+                metadata: {}
+                data: {}
+                target:
+                  entity_id: !input light_target
+              - action: switch.turn_off
+                metadata: {}
+                data: {}
+                target:
+                  entity_id: !input switch_target
