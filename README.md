@@ -84,10 +84,6 @@ Permet de contrôler la luminosité et la température de couleur.
 Contrôle des lumières avec le bouton SONOFF SNZP-01P via Zigbee2MQTT.
 Appui simple ou double pour différentes actions.
 
----
-
-### 🔧 Contrôles Zigbee2MQTT
-
 #### **tuya_ts0041_z2m_v2.yaml**
 Contrôle des actions avec Tuya TS0041 via Zigbee2MQTT.
 Appui simple, double ou maintenu pour déclencher des actions personnalisées.
@@ -95,6 +91,10 @@ Appui simple, double ou maintenu pour déclencher des actions personnalisées.
 #### **tuya_ts0043_z2m_v2.yaml**
 Contrôle des actions avec Tuya TS0043 via Zigbee2MQTT.
 3 boutons avec appui simple, double ou maintenu pour chaque bouton.
+
+#### **tuya_ts0044_z2m_v2.yaml**
+Contrôle des actions avec Tuya TS0043 via Zigbee2MQTT.
+4 boutons avec appui simple, double ou maintenu pour chaque bouton.
 
 ---
 
@@ -112,10 +112,10 @@ Démontre l'utilisation des tags dans les automatisations Home Assistant.
 
 ## 🚀 Installation
 
-1. Copiez le contenu du blueprint souhaité depuis ce dépôt
+1. Copiez le lien du blueprint souhaité depuis ce dépôt
 2. Dans Home Assistant, allez dans **Paramètres > Automatisations & Scènes > Blueprints**
 3. Cliquez sur **Importer un blueprint**
-4. Collez le contenu YAML et validez
+4. Collez le contenu liens et validez
 5. Créez une nouvelle automatisation basée sur ce blueprint
 6. Configurez les paramètres selon vos besoins
 
