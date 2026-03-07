@@ -15,6 +15,7 @@ blueprint:
   author: Beckynet
   homeassistant:
     min_version: 2024.10.0
+
   input:
     source_entity:
       name: Source entity
@@ -51,9 +52,12 @@ blueprint:
           sort: false
           multiple: false
           custom_value: false
+
   source_url: https://github.com/beckynet/HA_Blueprint/blob/main/toggle_light_when_other_light_or_switch_state_change.yaml
+
 variables:
   action_on_target: !input target_action
+
 triggers:
 - trigger: state
   entity_id: !input source_entity
@@ -65,7 +69,9 @@ triggers:
   from: 'on'
   to: 'off'
   id: 'off'
+
 conditions: []
+
 actions:
 - choose:
   - conditions:

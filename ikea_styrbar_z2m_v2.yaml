@@ -27,12 +27,19 @@ blueprint:
   author: Beckynet
   homeassistant:
     min_version: 2024.10.0
+
   input:
     z2m_base_topic:
       name: Zigbee2MQTT Base Topic
-      description: Zigbee2MQTT Base Topic, take a look in your Z2M configuration under
-        Setting / MQTT / Base Topic. Note that these values are case sensitive. Respect
-        lower and upper case letters
+      description: 'Zigbee2MQTT Base Topic, take a look in your Z2M configuration under Setting / MQTT / Base Topic
+        
+        Note:
+        
+          - These values are case sensitive.
+          
+          - Respect lower and upper case letters
+          
+        Sample : zigbee2mqtt/device name/action.'
       default: zigbee2mqtt
       selector:
         text: {}
@@ -53,9 +60,11 @@ blueprint:
 trigger_variables:
   z2m_base_topic: !input z2m_base_topic
   light_entities: !input target_lights
+
 triggers:
 - trigger: mqtt
   topic: !input z2m_base_topic
+
 actions:
 - choose:
   - conditions:

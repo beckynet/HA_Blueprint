@@ -2,6 +2,10 @@ blueprint:
   name: Alerte batterie Tado
   description: Alerte batterie faible avec notification
   domain: automation
+  author: Beckynet
+  homeassistant:
+    min_version: 2024.10.0
+    
   input:
     battery_sensor:
       name: Capteur de batterie

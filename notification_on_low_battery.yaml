@@ -2,9 +2,16 @@ blueprint:
   name: Notification On Low Battery
   description: 'Regularly checks all battery sensors and triggers an action if their
     battery level is below a configurable threshold.
-
+    Batteries to exclude can be configured, as well as the day and time of the check.
+    The list of low battery devices is available in the {{ batteries }} variable, and
+    the list of devices with unavailable battery level is available in the {{ batteries_indisponibles }} variable.
     '
+
   domain: automation
+  author: Beckynet
+  homeassistant:
+    min_version: 2024.10.0
+
   input:
     threshold:
       name: Battery threshold (%)
@@ -65,7 +72,9 @@ blueprint:
       default: []
       selector:
         action: {}
+
   source_url: https://github.com/beckynet/HA_Blueprint/blob/main/notification_on_low_battery.yaml
+
 variables:
   threshold: !input threshold
   day: !input day
@@ -84,12 +93,15 @@ variables:
     in ['unknown', 'unavailable', 'None'] %}\n      {% set result.list = result.list
     + [ state.name ] %}\n    {% endif %}\n  {% endif %}\n{% endfor %} {{ result.list
     | join(', ') }}\n"
-trigger:
-- platform: time
+
+triggers:
+- trigger: time
   at: !input time
-condition:
+
+conditions:
 - '{{ batteries != '''' and (day | int == 0 or day | int == now().isoweekday()) }}'
-action:
+
+actions:
 - action: notify.send_message
   target:
     entity_id: !input target_telegram
@@ -102,4 +114,5 @@ action:
       | replace('.','\\.') }}"
 - choose: []
   default: !input actions
+
 mode: single

@@ -3,6 +3,7 @@ blueprint:
   description: Automated weekly reboot of the entire Home Asistant OS host inspired on work of (by Chef de IT)
   domain: automation
   author: Beckynet
+
   input:
     reboot_day:
       name: Reboot Day of Week
@@ -27,16 +28,20 @@ blueprint:
       default: 04:00:00
       selector:
         time: {}
+
   source_url: https://github.com/beckynet/HA_Blueprint/blob/main/Reboot-HA-weekly.yaml
+
+triggers:
+- trigger: time
+  at: !input reboot_time
+
 conditions:
 - condition: time
   before: 00:00:00
   after: 00:00:00
   weekday:
   - !input reboot_day
-triggers:
-- trigger: time
-  at: !input reboot_time
+
 actions:
 - action: hassio.host_reboot
   data: {}

@@ -20,6 +20,7 @@ blueprint:
   author: Beckynet
   homeassistant:
     min_version: 2024.10.0
+
   input:
     z2m_base_topic:
       name: Zigbee2MQTT Base Topic

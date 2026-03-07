@@ -3,6 +3,8 @@ blueprint:
   description: >
     Un Blueprint pour sélectionner des Tags multiples.
   domain: automation
+  author: Beckynet
+
   input:
     selected_tags:
       name: Tags Sélectionnés
@@ -32,3 +34,5 @@ actions:
   action: notify.notify
   data:
     message: "Un événement a été déclenché par l'un des Tags sélectionnés"
+
+mode: single

@@ -19,6 +19,7 @@ blueprint:
   author: Beckynet
   homeassistant:
     min_version: 2024.10.0
+
   input:
     offset_sunset:
       name: Offset Relative To Sunset
@@ -57,7 +58,6 @@ blueprint:
           default: 00:00:00
           selector:
             time: {}
-
 
     presence_helpers:
       name: Presence Helpers
@@ -173,3 +173,4 @@ actions:
                 data: {}
                 target:
                   entity_id: !input switch_target
+mode: single

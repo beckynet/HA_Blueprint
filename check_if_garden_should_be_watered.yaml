@@ -3,6 +3,9 @@ blueprint:
   description: Check If Garden Should Be Watered
   domain: automation
   author: Beckynet
+  homeassistant:
+    min_version: 2024.10.0
+
   input:
     offset_sunrise:
       name: Offset Relative To Sunrise
@@ -97,7 +100,9 @@ blueprint:
           - domain:
             - script
           reorder: false
+
   source_url: https://github.com/beckynet/HA_Blueprint/blob/main/check_if_garden_should_be_watered.yaml
+
 trigger_variables:
   offset_sunrise: !input offset_sunrise
   minimal_days_between_watering: !input minimal_days_between_watering
@@ -114,11 +119,14 @@ trigger_variables:
   watering_duration: !input watering_duration
   days_since_last_watering_day: !input days_since_last_watering_day
   total_rain_fallen_plus_expected: !input total_rain_fallen_plus_expected
+
 triggers:
 - trigger: sun
   event: sunrise
   offset: !input offset_sunrise
+
 conditions: []
+
 actions:
 - choose:
   - conditions:

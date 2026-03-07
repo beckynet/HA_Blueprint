@@ -5,7 +5,10 @@ blueprint:
   name: sun protection
   description: close cover when sun is shining and open when stops
   domain: automation
-  source_url: https://gist.github.com/mougeat/bec9f93c723c8e7d1a9c64c2592fa471
+  author: Beckynet
+  homeassistant:
+    min_version: 2024.10.0
+  
   input:
     cover_entity:
       name: cover
@@ -66,7 +69,8 @@ blueprint:
           max: 60
           unit_of_measurement: s
 
-
+  source_url: https://github.com/beckynet/HA_Blueprint/blob/main/sun_protection.yaml
+ 
 variables:
   cover_e: !input cover_entity
   var_e: "{{ 'var.' + cover_e[6:] }}"
@@ -75,8 +79,6 @@ variables:
   elevation_begin: !input sun_elevation_start
   outdoor_temp: !input outdoor_temp
   weather_service: !input weather
-
-mode: parallel
 
 trigger:
   - trigger: time_pattern
@@ -148,3 +150,5 @@ action:
           - variables:
               entity_id: "{{ var_e }}"
               value: 1
+
+mode: parallel

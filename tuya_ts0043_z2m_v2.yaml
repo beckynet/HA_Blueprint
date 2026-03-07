@@ -25,17 +25,16 @@ blueprint:
   input:
     z2m_base_topic:
       name: Zigbee2MQTT Base Topic
-      description: 'Zigbee2MQTT Base Topic, take a look in your Z2M configuration
-        under Setting / MQTT / Base Topic. Note: - These values are case sensitive.
-        - Respect lower and upper case letters'
+      description: 'Zigbee2MQTT Base Topic, take a look in your Z2M configuration under Setting / MQTT / Base Topic
+        
+        Note:
+        
+          - These values are case sensitive.
+          
+          - Respect lower and upper case letters
+          
+        Sample : zigbee2mqtt/device name/action.'
       default: zigbee2mqtt
-      selector:
-        text: {}
-    z2m_device_name:
-      name: Zigbee2MQTT Device Name
-      description: 'Take a look at your Z2M device to find the device name. Note:
-        - These values are case sensitive. - Respect lower and upper case letters'
-      default:
       selector:
         text: {}
     action_1_single:
@@ -88,11 +87,10 @@ blueprint:
 
 trigger_variables:
   z2m_base_topic: !input z2m_base_topic
-  z2m_device_name: !input z2m_device_name
 
 triggers:
 - trigger: mqtt
-  topic: '{{ z2m_base_topic }}/{{ z2m_device_name }}/action'
+  topic: !input z2m_base_topic
 
 conditions: []
 

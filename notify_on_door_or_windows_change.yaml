@@ -3,6 +3,9 @@ blueprint:
   description: Notify On Door or Window Change
   domain: automation
   author: Beckynet
+  homeassistant:
+    min_version: 2024.10.0
+
   input:
     contact_entities:
       name: List Of Door or Windows Contact
@@ -48,12 +51,15 @@ blueprint:
           integration: alexa_devices
           multiple: true
           reorder: false
+
   source_url: https://github.com/beckynet/HA_Blueprint/blob/main/notify_on_door_or_windows_change.yaml
+
 variables:
   list_contact_entities: !input contact_entities
   list_person_entities: !input person_entities
   list_target_telegram: !input target_telegram
   list_target_alexa: !input target_alexa
+
 triggers:
 - trigger: state
   entity_id: !input contact_entities
@@ -65,11 +71,13 @@ triggers:
   from: 'on'
   to: 'off'
   id: 'off'
-condition:
+
+conditions:
 - condition: template
   value_template: "{% set personnes = expand(list_person_entities) %} {% if personnes
     | length == 0 %}\n  true\n{% else %}\n  {{ personnes | selectattr('state', 'eq',
     'home') | list | count <= 0 }}\n{% endif %}"
+
 actions:
 - action: notify.send_message
   target:
