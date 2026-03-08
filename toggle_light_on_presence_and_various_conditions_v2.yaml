@@ -1,0 +1,336 @@
+blueprint:
+  name: Toggle Light On Presence And Various Conditions - multi-presence + avg lux
+  description: Toggle a Light Based On Presence Sensors and various conditions; supports multiple presence sensors and average of multiple illuminance sensors.
+  domain: automation
+  author: Beckynet (modifié)
+  homeassistant:
+    min_version: 2024.10.0
+
+  input:
+    presence_entity:
+      name: Presence Sensors
+      description: One or more presence/occupancy/motion sensors that act as triggers
+      selector:
+        entity:
+          filter:
+            - domain:
+                - binary_sensor
+              device_class:
+                - occupancy
+                - presence
+                - motion
+          multiple: true            # <-- permet plusieurs capteurs
+          reorder: false
+
+    wait_time:
+      name: Wait Time
+      description: Time to leave the light on after no presence is reported
+      selector:
+        number:
+          mode: slider
+          min: 0.0
+          max: 720.0
+          step: 15.0
+          unit_of_measurement: seconds
+      default: 60
+
+    light_target:
+      name: Light
+      description: Light(s) or Light group to control
+      selector:
+        entity:
+          filter:
+            - domain:
+                - light
+          multiple: true
+          reorder: false
+
+    daylight_as_condition:
+      name: Daylight as condition (Optional)
+      icon: mdi:theme-light-dark
+      collapsed: true
+      input:
+        include_daylight:
+          name: Use Daylight as condition
+          description: "Use The Daylight option will add a sunset or sunrise condition.\n\nYou can define whether it's daytime or night-time operation.\n\n 📌 The use of multiple contradictory conditions can lead to incorrect operation."
+          default: daylight_disabled
+          selector:
+            select:
+              options:
+                - label: Enable Daylight as condition
+                  value: daylight_enabled
+                - label: Disable Daylight as condition
+                  value: daylight_disabled
+        day_or_night_use:
+          name: Day or Night use
+          description: "Use The Daylight option will add a sunset or sunrise condition.\n\nYou can define whether it's daytime or night-time operation.\n\n 📌 The use of multiple contradictory conditions can lead to incorrect operation."
+          default: night_use
+          selector:
+            select:
+              options:
+                - label: Activate Daytime use
+                  value: day_use
+                - label: Activate Night use
+                  value: night_use
+
+    time_as_condition:
+      name: Time as condition (Optional)
+      icon: mdi:clock-outline
+      collapsed: true
+      input:
+        include_time:
+          name: Use The Time as Condition (Optional)
+          description: "This option adds a condition to run only between start and end times on selected weekdays.\n\nThese time settings are global conditions that can work alongside other options.\n\n 📌 Avoid contradictory conditions."
+          default: time_disabled
+          selector:
+            select:
+              options:
+                - label: Enable the time options
+                  value: time_enabled
+                - label: Disable the time options
+                  value: time_disabled
+        after_time:
+          name: Start Time
+          description: Set the start time.
+          default: 00:00:00
+          selector:
+            time: {}
+        before_time:
+          name: End Time
+          description: Set the end time.
+          default: 00:00:00
+          selector:
+            time: {}
+
+    luminosity_as_condition:
+      name: Luminosity as condition (Optional)
+      icon: mdi:lightbulb-multiple-outline
+      collapsed: true
+      input:
+        include_luminosity:
+          name: Use Luminosity as option
+          description: "Using luminosity as a condition based on Lux or Dim.\n\n 📌 Avoid contradictory conditions."
+          default: luminosity_disabled
+          selector:
+            select:
+              options:
+                - label: Enable Luminosity in Lux as condition
+                  value: luminosity_lux_enabled
+                - label: Enable Luminosity in Dim as condition
+                  value: luminosity_dim_enabled
+                - label: Disable Luminosity as condition
+                  value: luminosity_disabled
+        illuminance_entity:
+          name: Illuminance Sensors
+          description: One or more illuminance sensors that measure light (lux) or report 'dim'
+          default: []
+          selector:
+            entity:
+              filter:
+                - domain:
+                    - sensor
+                  device_class:
+                    - illuminance
+              multiple: true       # <-- permet plusieurs capteurs
+              reorder: false
+        illuminance_value:
+          name: Illuminance Value (Lux)
+          description: The light will turn on only if the average lux is below this value
+          default: 100
+          selector:
+            number:
+              mode: slider
+              min: 0.0
+              max: 2000.0
+              step: 20.0
+              unit_of_measurement: lux
+
+    bypass_settings:
+      name: Bypass (Optional)
+      icon: mdi:cog-pause-outline
+      collapsed: true
+      input:
+        include_bypass:
+          name: Use The Bypass Options (Optional)
+          description: Activate if you want to bypass a defined time range.
+          default: bypass_disabled
+          selector:
+            select:
+              options:
+                - label: 1 - Enable the Bypass
+                  value: bypass_enabled
+                - label: 2 - Disable the Bypass
+                  value: bypass_disabled
+        bypass_after_time:
+          name: Start Time
+          description: Set the start time.
+          default: 00:00:00
+          selector:
+            time: {}
+        bypass_before_time:
+          name: End Time
+          description: Set the end time.
+          default: 00:00:00
+          selector:
+            time: {}
+
+  source_url: https://github.com/beckynet/HA_Blueprint/blob/main/toggle_light_on_presence.yaml
+
+variables:
+  automation_name: '{{ this.attributes.last_triggered }}'
+
+  # --- inputs
+  presence_entities: !input presence_entity
+  wait_time: !input wait_time
+
+  include_luminosity: !input include_luminosity
+  illuminance_entity: !input illuminance_entity
+  illuminance_value: !input illuminance_value
+
+  include_time: !input include_time
+  after_time: !input after_time
+  before_time: !input before_time
+
+  include_daylight: !input include_daylight
+  day_or_night_use: !input day_or_night_use
+
+  include_bypass: !input include_bypass
+  bypass_after_time: !input bypass_after_time
+  bypass_before_time: !input bypass_before_time
+
+  # --- computed helpers
+  avg_lux: >-
+    {% set ents = expand(illuminance_entity)
+                   | rejectattr('state','in',['unknown','unavailable'])
+                   | list %}
+    {% if ents | length > 0 %}
+      {% set lux = ents | map(attribute='state') | map('float') | list %}
+      {{ (lux | sum / (lux | length)) | round(1) }}
+    {% else %}
+      {{ None }}
+    {% endif %}
+
+  any_dim: >-
+    {% set ents = expand(illuminance_entity) | list %}
+    {{ ents | selectattr('state','eq','dim') | list | length > 0 }}
+
+  all_off_for_wait: >-
+    {% set ents = expand(presence_entities) | list %}
+    {% set w = (wait_time | int) %}
+    {% if ents | length == 0 %}
+      false
+    {% else %}
+      {% set offs = ents | selectattr('state','eq','off') | list %}
+      {% if offs | length != ents | length %}
+        false
+      {% else %}
+        {# Max du dernier passage à 'off' -> chaque capteur doit être 'off' depuis au moins w #}
+        {{ as_timestamp(now()) - (offs | map(attribute='last_changed') | map('as_timestamp') | max) >= w }}
+      {% endif %}
+    {% endif %}
+
+triggers:
+  # Any presence turns ON
+  - trigger: state
+    entity_id: !input presence_entity
+    from: 'off'
+    to: 'on'
+    id: 'On'
+
+  # When any presence has been off for wait_time -> we vérifierons ensuite que TOUT est off pour wait_time
+  - trigger: state
+    entity_id: !input presence_entity
+    from: 'on'
+    to: 'off'
+    for:
+      seconds: !input wait_time
+    id: 'Off'
+
+conditions: []
+
+actions:
+  - choose:
+
+      # -------------------------
+      #   PRESENCE → ON
+      # -------------------------
+      - conditions:
+          - condition: trigger
+            id: 'On'
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {% set current_time = now().strftime('%H:%M:%S') %}
+                      {% set bypass_start = bypass_after_time %}
+                      {% set bypass_end = bypass_before_time %}
+
+                      {{
+                        (
+                          include_luminosity == 'luminosity_disabled'
+                          or
+                          (include_luminosity == 'luminosity_lux_enabled'
+                            and avg_lux is not none
+                            and avg_lux < illuminance_value)
+                          or
+                          (include_luminosity == 'luminosity_dim_enabled'
+                            and any_dim)
+                        )
+                        and
+                        (
+                          include_time == 'time_disabled'
+                          or
+                          (include_time == 'time_enabled'
+                            and current_time > after_time
+                            and current_time < before_time)
+                        )
+                        and
+                        (
+                          include_daylight == 'daylight_disabled'
+                          or
+                          (
+                            include_daylight == 'daylight_enabled'
+                            and (
+                              (day_or_night_use == 'day_use' and is_state('sun.sun','above_horizon'))
+                              or
+                              (day_or_night_use == 'night_use' and is_state('sun.sun','below_horizon'))
+                            )
+                          )
+                        )
+                        and
+                        (
+                          include_bypass == 'bypass_disabled'
+                          or
+                          (
+                            include_bypass == 'bypass_enabled'
+                            and not (
+                              (current_time >= bypass_start) or (current_time <= bypass_end)
+                            )
+                          )
+                        )
+                      }}
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input light_target
+            default:
+              - action: light.turn_off
+                target:
+                  entity_id: !input light_target
+
+      # -------------------------
+      #   NO PRESENCE → OFF
+      # -------------------------
+      - conditions:
+          - condition: trigger
+            id: 'Off'
+        sequence:
+          # On ne coupe que si TOUT est off depuis wait_time
+          - condition: template
+            value_template: "{{ all_off_for_wait }}"
+          - action: light.turn_off
+            target:
+              entity_id: !input light_target
+
+mode: single
