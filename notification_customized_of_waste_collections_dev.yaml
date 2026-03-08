@@ -1,0 +1,164 @@
+blueprint:
+  name: Notification Customized of Waste collections
+  description: '## Notification Customized of Waste collections (v2.0)
+
+
+    Only for use with (cf [RecycleApp](https://github.com/olibos/HomeAssistant-RecycleApp/))
+
+
+    ***Available controls:***
+
+
+    - Selection of the type of residue collection to be followed
+
+
+    - Choice of announcement time
+
+
+    - Telegram notification option (Markdown V2)
+
+
+    - Alexa Device(s) notification option
+
+    '
+  domain: automation
+  author: Beckynet
+  homeassistant:
+    min_version: 2024.10.0
+  
+  input:
+    collect_list:
+      name: List Of Collect
+      description: List of collect you want to follow
+      default: []
+      selector:
+        entity:
+          domain:
+          - sensor
+          integration: recycle_app
+          multiple: true
+          reorder: false
+    trigger_time:
+      name: Trigger time
+      description: Select the trigger time
+      selector:
+        time: {}
+    target_telegram:
+      name: Telegram Group
+      description: Select Telegram Chat Traget (Optional)
+      default: []
+      selector:
+        entity:
+          domain:
+          - notify
+          integration: telegram_bot
+          multiple: true
+          reorder: false
+    target_alexa:
+      name: Alexa Devices
+      description: Alexa Devices (Optional)
+      default: []
+      selector:
+        entity:
+          domain:
+          - notify
+          integration: alexa_devices
+          multiple: true
+          reorder: false
+
+    media_player_settings:
+      name: TSS on Media Player (Optional)
+      icon: mdi:speaker-message
+      collapsed: true
+      input:
+        include_bypass:
+          name: Use TSS on Media Player (Optional)
+          description: Use TTS with a Media Player to announce message.
+          default: media_player_disabled
+          selector:
+            select:
+              options:
+              - label: 1 - Enable Media Player
+                value: media_player_enabled
+              - label: 2 - Disable Media Player
+                value: media_player_disabled
+        target_tts:
+          name: TTS engine
+          description: TTS Engine (needed with Media Player)
+          default: []
+          selector:
+            entity:
+              domain:
+              - tts
+              multiple: false
+              reorder: false
+        target_media_players:
+          name: Media Players
+          description: Media Player (optional)
+          default: []
+          selector:
+            entity:
+              domain:
+              - media_player
+              multiple: true
+              reorder: false
+
+
+
+  source_url: https://github.com/beckynet/HA_Blueprint/blob/main/notification_customized_of_waste_collections.yaml
+
+variables:
+  list_collect: !input collect_list
+  list_target_telegram: !input target_telegram
+  list_target_alexa: !input target_alexa
+
+triggers:
+- trigger: time
+  at: !input trigger_time
+
+conditions:
+- condition: template
+  value_template: "{% set tomorrow_pickups = namespace(entities=[]) %} {% set pickup_day
+    = namespace(state = false) %} {% set collect_types = list_collect %} {% for collect_type
+    in collect_types %}\n  {% if state_attr(collect_type, 'days') == 1 %}\n    {%
+    set pickup_day.state = true %}\n    {% set tomorrow_pickups.entities = tomorrow_pickups.entities
+    + [state_attr(collect_type, 'friendly_name')] %}\n  {% endif %}\n{% endfor %}
+    {{ pickup_day.state }}"
+
+actions:
+- action: notify.send_message
+  target:
+    entity_id: !input target_telegram
+  data:
+    title: "*\U0001F4E2 Ramassage des Ordures*"
+    message: "{% set tomorrow_pickups = namespace(entities=[]) %} {% set pickup_day
+      = namespace(state = false) %} {% set collect_types = list_collect %} {% for
+      collect_type in collect_types %}\n  {% if state_attr(collect_type, 'days') ==
+      1 %}\n    {% set pickup_day.state = true %}\n    {% set tomorrow_pickups.entities
+      = tomorrow_pickups.entities + [state_attr(collect_type, 'friendly_name')] %}\n
+      \ {% endif %}\n{% endfor %} {% if pickup_day.state == true %}\n  {{ ('Demain
+      collecte de\\n' ~ tomorrow_pickups.entities | join('\\n')) | regex_replace('([_*\\[\\]\\(\\)~`>#+\\-=|{}.!])',
+      '\\\\\\\\\\1') }}\n{% endif %}"
+- action: notify.send_message
+  target:
+    entity_id: !input target_alexa
+  data:
+    message: "{% set tomorrow_pickups = namespace(entities=[]) %} {% set pickup_day
+      = namespace(state = false) %} {% set collect_types = list_collect %} {% for
+      collect_type in collect_types %}\n  {% if state_attr(collect_type, 'days') ==
+      1 %}\n    {% set pickup_day.state = true %}\n    {% set tomorrow_pickups.entities
+      = tomorrow_pickups.entities + [state_attr(collect_type, 'friendly_name')] %}\n
+      \ {% endif %}\n{% endfor %} {% if pickup_day.state == true %}\n  Demain collecte
+      {{ tomorrow_pickups.entities |join(' et ') }}\n{% endif %}"
+- action: media_player.play_media
+  target:
+    entity_id: !input target_media_players
+  data:
+    media_content_type: announce
+    media_content_id: "{% set tomorrow_pickups = namespace(entities=[]) %} {% set
+      pickup_day = namespace(state = false) %} {% set collect_types = list_collect
+      %} {% for collect_type in collect_types %}\n  {% if state_attr(collect_type,
+      'days') == 1 %}\n    {% set pickup_day.state = true %}\n    {% set tomorrow_pickups.entities
+      = tomorrow_pickups.entities + [state_attr(collect_type, 'friendly_name')] %}\n
+      \ {% endif %}\n{% endfor %} {% if pickup_day.state == true %}\n  Demain collecte
+      {{ tomorrow_pickups.entities | join(' et ') }}\n{% endif %}"
