@@ -144,24 +144,26 @@ conditions:
   - condition: template
     value_template: >
       {% set tomorrow_pickups = namespace(entities=[]) %}
-      {% set pickup_day = false %}
-      {% for c in list_collect %}
-        {% if state_attr(c,'days') == 1 %}
-          {% set pickup_day = true %}
+      {% set pickup_day = namespace(state = false) %}
+      {% set collect_types = list_collect %}
+      {% for collect_type in collect_types %}
+        {% if state_attr(collect_type, 'days') == 1 %}
+        {% set pickup_day.state = true %}
+        {% set tomorrow_pickups.entities = tomorrow_pickups.entities + [state_attr(collect_type, 'friendly_name')] %}
         {% endif %}
       {% endfor %}
-      {{ pickup_day }}
+      {{ pickup_day.state }}
 
 actions:
   - variables:
       announce_text: >-
         {% set tomorrow_pickups = namespace(entities=[]) %}
-        {% set pickup_day = false %}
-        {% for c in list_collect %}
-          {% if state_attr(c,'days') == 1 %}
-            {% set pickup_day = true %}
-            {% set tomorrow_pickups.entities = tomorrow_pickups.entities +
-               [state_attr(c,'friendly_name')] %}
+        {% set pickup_day = namespace(state = false) %}
+        {% set collect_types = list_collect %}
+        {% for collect_type in collect_types %}
+          {% if state_attr(collect_type, 'days') == 1 %}
+          {% set pickup_day.state = true %}
+          {% set tomorrow_pickups.entities = tomorrow_pickups.entities + [state_attr(collect_type, 'friendly_name')] %}
           {% endif %}
         {% endfor %}
         {% if pickup_day %}
