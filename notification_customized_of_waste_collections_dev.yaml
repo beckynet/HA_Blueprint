@@ -128,7 +128,7 @@ variables:
   list_collect: !input collect_list
   enable_telegram: !input enable_telegram
   enable_alexa: !input enable_alexa
-  enable_media_playe: !input enable_media_player
+  enable_media_player: !input enable_media_player
   list_target_telegram: !input target_telegram
   list_target_alexa: !input target_alexa
 
