@@ -79,10 +79,9 @@ conditions:
     'home') | list | count <= 0 }}\n{% endif %}"
 
 actions:
-- action: notify.send_message
-  target:
-    entity_id: !input target_telegram
+- action: telegram_bot.send_message
   data:
+    entity_id: !input target_telegram
     title: '{{ area_name(trigger.entity_id) }}'
     message: '{% set status = {''on'': ''Ouverte'', ''off'': ''Fermée''} %} {% set
       conditions = trigger.to_state.state %} {% set classes = {''door'': ''Porte'',
