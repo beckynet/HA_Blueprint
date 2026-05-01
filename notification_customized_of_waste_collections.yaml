@@ -163,7 +163,7 @@ actions:
         {% for collect_type in collect_types %}
           {% if state_attr(collect_type, 'days') == 1 %}
           {% set pickup_day.state = true %}
-          {% set tomorrow_pickups.entities = tomorrow_pickups.entities + [state_attr(collect_type, 'friendly_name')] %}
+          {% set tomorrow_pickups.entities = tomorrow_pickups.entities + [state_attr(collect_type, 'type_of_collect')] %}
           {% endif %}
         {% endfor %}
         {% if pickup_day %}
