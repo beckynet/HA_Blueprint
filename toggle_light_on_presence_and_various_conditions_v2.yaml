@@ -342,7 +342,16 @@ actions:
                           (
                             include_bypass == 'bypass_enabled'
                             and not (
-                              (current_time >= bypass_start) or (current_time <= bypass_end)
+                              (
+                                bypass_start < bypass_end
+                                and current_time >= bypass_start
+                                and current_time < bypass_end
+                              )
+                              or
+                              (
+                                bypass_start > bypass_end
+                                and (current_time >= bypass_start or current_time < bypass_end)
+                              )
                             )
                           )
                         )
