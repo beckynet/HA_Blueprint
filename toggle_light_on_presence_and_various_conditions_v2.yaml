@@ -19,7 +19,7 @@ blueprint:
                 - occupancy
                 - presence
                 - motion
-          multiple: true            # <-- permet plusieurs capteurs
+          multiple: true # <-- permet plusieurs capteurs
           reorder: false
 
     wait_time:
@@ -89,6 +89,35 @@ blueprint:
                   value: time_enabled
                 - label: Disable the time options
                   value: time_disabled
+        weekdays:
+          name: Days of the week
+          description: Select the weekdays when this blueprint may turn on the light.
+          default:
+            - mon
+            - tue
+            - wed
+            - thu
+            - fri
+            - sat
+            - sun
+          selector:
+            select:
+              multiple: true
+              options:
+                - label: Monday
+                  value: mon
+                - label: Tuesday
+                  value: tue
+                - label: Wednesday
+                  value: wed
+                - label: Thursday
+                  value: thu
+                - label: Friday
+                  value: fri
+                - label: Saturday
+                  value: sat
+                - label: Sunday
+                  value: sun
         after_time:
           name: Start Time
           description: Set the start time.
@@ -131,7 +160,7 @@ blueprint:
                     - sensor
                   device_class:
                     - illuminance
-              multiple: true       # <-- permet plusieurs capteurs
+              multiple: true # <-- permet plusieurs capteurs
               reorder: false
         illuminance_value:
           name: Illuminance Value (Lux)
@@ -177,7 +206,7 @@ blueprint:
   source_url: https://github.com/beckynet/HA_Blueprint/blob/main/toggle_light_on_presence.yaml
 
 variables:
-  automation_name: '{{ this.attributes.last_triggered }}'
+  automation_name: "{{ this.attributes.last_triggered }}"
 
   # --- inputs
   presence_entities: !input presence_entity
@@ -188,6 +217,7 @@ variables:
   illuminance_value: !input illuminance_value
 
   include_time: !input include_time
+  weekdays: !input weekdays
   after_time: !input after_time
   before_time: !input before_time
 
@@ -233,30 +263,29 @@ triggers:
   # Any presence turns ON
   - trigger: state
     entity_id: !input presence_entity
-    from: 'off'
-    to: 'on'
-    id: 'On'
+    from: "off"
+    to: "on"
+    id: "On"
 
   # When any presence has been off for wait_time -> we vérifierons ensuite que TOUT est off pour wait_time
   - trigger: state
     entity_id: !input presence_entity
-    from: 'on'
-    to: 'off'
+    from: "on"
+    to: "off"
     for:
       seconds: !input wait_time
-    id: 'Off'
+    id: "Off"
 
 conditions: []
 
 actions:
   - choose:
-
       # -------------------------
       #   PRESENCE → ON
       # -------------------------
       - conditions:
           - condition: trigger
-            id: 'On'
+            id: "On"
         sequence:
           - choose:
               - conditions:
@@ -282,8 +311,16 @@ actions:
                           include_time == 'time_disabled'
                           or
                           (include_time == 'time_enabled'
-                            and current_time > after_time
-                            and current_time < before_time)
+                            and ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][now().weekday()] in weekdays
+                            and (
+                              (after_time < before_time
+                                and current_time >= after_time
+                                and current_time < before_time)
+                              or
+                              (after_time > before_time
+                                and (current_time >= after_time or current_time < before_time))
+                            )
+                          )
                         )
                         and
                         (
@@ -314,17 +351,13 @@ actions:
                   - action: light.turn_on
                     target:
                       entity_id: !input light_target
-            default:
-              - action: light.turn_off
-                target:
-                  entity_id: !input light_target
 
       # -------------------------
       #   NO PRESENCE → OFF
       # -------------------------
       - conditions:
           - condition: trigger
-            id: 'Off'
+            id: "Off"
         sequence:
           # On ne coupe que si TOUT est off depuis wait_time
           - condition: template
