@@ -333,4 +333,4 @@ actions:
             target:
               entity_id: !input light_target
 
-mode: single
+mode: restart
